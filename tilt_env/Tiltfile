@@ -1,0 +1,26 @@
+load('ext://local_output', 'local_output')
+
+def _get_env():
+  return read_json(".tiltenv", default={})
+
+def tilt_env_get(key):
+  js = _get_env()
+  return js.get(key, None)
+
+def tilt_env_set(key, val):
+  js = _get_env()
+  js[key] = val
+  local('echo %s > .tiltenv' % shlex.quote(encode_json(js)))
+
+def tilt_env_delete(key):
+  js = _get_env()
+  js.pop(key)
+  local('echo %s > .tiltenv' % shlex.quote(encode_json(js)))
+
+def tilt_env_get_or_random(key, random_len = 32, val_prefix = ''):
+  val = tilt_env_get(key)
+  if not val:
+    val = val_prefix + local_output("echo a-$(head /dev/urandom | env LC_CTYPE=C tr -dc a-z0-9 | head -c %s ; echo '')" % random_len)
+    tilt_env_set(key, val)
+  return val
+
